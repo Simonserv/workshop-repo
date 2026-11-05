@@ -1,0 +1,152 @@
+:root {
+  --color-bg: #0b1020;
+  --color-surface: #141b2e;
+  --color-border: #263150;
+  --color-text: #e7ecf5;
+  --color-muted: #9aa6bf;
+  --color-accent: #4f8cff;
+  --color-accent-contrast: #ffffff;
+  --max-width: 1040px;
+  --radius: 10px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  line-height: 1.6;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+a:hover,
+a:focus-visible {
+  text-decoration: underline;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ---- Navigation ---- */
+.site-nav {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.site-nav__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.site-nav__brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--color-text);
+}
+
+.site-nav__links {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.site-nav__links a {
+  color: var(--color-muted);
+  font-weight: 500;
+}
+
+.site-nav__links a:hover {
+  color: var(--color-text);
+}
+
+/* ---- Hero / landing ---- */
+.hero {
+  padding: 72px 0 40px;
+}
+
+.hero__headline {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  line-height: 1.15;
+  margin: 0 0 12px;
+}
+
+.hero__tagline {
+  font-size: 1.2rem;
+  color: var(--color-muted);
+  margin: 0 0 20px;
+}
+
+.hero__intro {
+  max-width: 640px;
+  color: var(--color-text);
+  margin: 0 0 28px;
+}
+
+.btn {
+  display: inline-block;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  padding: 12px 20px;
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+
+.btn:hover,
+.btn:focus-visible {
+  text-decoration: none;
+  filter: brightness(1.08);
+}
+
+/* ---- Generic page sections ---- */
+.section {
+  padding: 32px 0 64px;
+}
+
+.section__title {
+  font-size: 1.5rem;
+  margin: 0 0 16px;
+}
+
+.muted {
+  color: var(--color-muted);
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+/* ---- Footer ---- */
+.site-footer {
+  border-top: 1px solid var(--color-border);
+  color: var(--color-muted);
+  padding: 24px 0;
+  font-size: 0.9rem;
+}
