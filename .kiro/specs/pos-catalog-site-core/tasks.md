@@ -86,15 +86,15 @@ These prepare the ready-to-run repository and the provisioning scripts students 
   - No banned tropes (mesh gradients, glassmorphism blobs, oversized hero + badge pills, uniform equal-height 3-col grids) unless explicitly required
   - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 15.7, 15.8, 15.9, 15.10_
 
-- [ ] 7. Implement public pages and flows
+- [x] 7. Implement public pages and flows
   - All screens in this task MUST compose the Task 6.5 primitives/tokens and implement the required loading, empty, error, and interactive states (Requirement 15)
-  - [ ] 7.1 Landing page (no auth, same for anon/authenticated), text/branding from the editable content/config file, nav to catalog
+  - [x] 7.1 Landing page (no auth, same for anon/authenticated), text/branding from the editable content/config file, nav to catalog
     - _Requirements: 1.1, 1.2, 1.3, 1.4_
-  - [ ] 7.2 Catalog listing via the role-aware server client (RLS returns published for anon/USER, all for Staff/Admin); render title + `/images/` image; link to detail
+  - [x] 7.2 Catalog listing via the role-aware server client (RLS returns published for anon/USER, all for Staff/Admin); render title + `/images/` image; link to detail
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
-  - [ ] 7.3 Listing detail via role-aware client (RLS governs unpublished visibility); render title/description/image; present the inquiry form matching `inquiry_type`; handle denied/not-found
+  - [x] 7.3 Listing detail via role-aware client (RLS governs unpublished visibility); render title/description/image; present the inquiry form matching `inquiry_type`; handle denied/not-found
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
-  - [ ] 7.4 Inquiry submission: route handler validating non-empty name/details + valid email (400 + field errors, persist nothing on failure); reject inactive/nonexistent listing (400); sanitize; persist status NEW; associate owner_id when authenticated; form wired with success/error states
+  - [x] 7.4 Inquiry submission: route handler validating non-empty name/details + valid email (400 + field errors, persist nothing on failure); reject inactive/nonexistent listing (400); sanitize; persist status NEW; associate owner_id when authenticated; form wired with success/error states
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
 
 - [ ] 8. Implement membership and donations

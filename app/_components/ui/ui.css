@@ -105,10 +105,17 @@
   padding: var(--space-4);
 }
 
-/* Interactive card (whole card is a link/button). */
+/* Interactive card (whole card is a link/button). Force block layout and
+   inherit text color so an anchor-rendered card fills its grid cell and does
+   not pick up the default link color/underline. */
 .card--interactive {
+  display: block;
+  color: inherit;
   transition: border-color var(--transition), box-shadow var(--transition),
     transform var(--transition);
+}
+.card--interactive:hover {
+  text-decoration: none;
 }
 .card--interactive:hover {
   border-color: var(--border-strong);
