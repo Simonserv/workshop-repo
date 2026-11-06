@@ -181,6 +181,54 @@ Version B split the application layer into hand-wired Vercel serverless function
 
 ---
 
+## UI/UX Design System (presentation layer)
+
+The presentation layer is built on a small, teachable design system rather than ad-hoc per-screen styling. This satisfies Requirement 15 and the `ui-ux-design` steering rules. It is a presentation concern only — RLS and the application layer remain the authoritative security boundary.
+
+### Design tokens (single source of truth)
+
+A central token file (CSS custom properties in a `theme.css`, or the Tailwind config) is the only place raw design values live. No component hardcodes a color, spacing, radius, or shadow outside the tokens.
+
+| Token group | Contents |
+|-------------|----------|
+| **Color** | ≤2 primary/accent colors + intentional neutrals; semantic roles (bg, surface, border, text, muted, accent, and status colors for PENDING/APPROVED/REJECTED/VERIFIED). Defined for **both dark and light** with strict parity. Text/interactive pairs meet WCAG AA contrast. |
+| **Typography** | A deliberate type scale with intentional line-heights and tighter tracking on headings. |
+| **Spacing** | A single spacing scale used for padding/margins/gaps (no ad-hoc pixel values in components). |
+| **Radius** | A unified set of border radii (one or two steps). |
+| **Shadow** | Subtle, directional, or flat/border-driven depth rules — favoring 1px borders and background shifts over heavy drop shadows. |
+| **Motion** | Transition tokens in the 150ms–200ms ease-out range. |
+
+### Primitive components
+
+A small set of reusable primitives compose every screen; new screens assemble these rather than inventing styles:
+
+- **Button** — variants (primary/secondary/ghost) with full hover, focus-visible ring, active, and disabled states.
+- **Field / Input** — label + control + inline error slot, with focus-visible and error styling.
+- **Card** — token-driven surface; sizes may vary by content (not a uniform grid cell).
+- **StatusBadge** — maps a record status (PENDING/APPROVED/REJECTED/NEW/IN_PROGRESS/CLOSED/VERIFIED) to a token-driven color.
+- **FormRow / Feedback** — layout + success/error messaging used by inquiry, auth, receipt, and donation forms.
+
+### Required states (every data-driven screen)
+
+Each screen that fetches or submits data must explicitly handle the full state set, not just the happy path:
+
+| State | Treatment |
+|-------|-----------|
+| **Loading** | Skeleton or spinner until data resolves. |
+| **Empty** | Helpful guidance or a CTA when there is no data (e.g. an empty catalog, no pending receipts). |
+| **Error** | Field-level validation feedback for forms; a clear message + recovery action for failed fetches/actions. |
+| **Interactive** | Hover, focus-visible, active, disabled on every clickable element. |
+
+### Layout principles
+
+Mobile-first and responsive throughout. Design for real information density and ergonomic scanning (F-pattern for content, Z-pattern for action-light screens). Vary component sizing where it aids hierarchy; avoid the cookie-cutter equal-height 3-column card grid and the banned decorative tropes (mesh gradients, glassmorphism blobs, oversized hero + badge pills) unless a screen explicitly calls for them.
+
+### Workshop fit
+
+Because students customize copy, images, and branding (`content/*`, `public/images/*`), the tokens and primitives must absorb those changes — new text, a new brand accent, a replaced image — without breaking layout. The system stays small enough to teach in one session and robust enough to survive student edits.
+
+---
+
 ## Components and Interfaces
 
 Domain logic lives in server-side modules. Each maps to a Version B service but runs inside the single Next.js app.

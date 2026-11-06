@@ -215,6 +215,23 @@ The core public experience lets anonymous visitors browse a landing page and a c
 6. IF an upstream storage or database operation fails, THEN THE Platform SHALL respond with a 500 status and a generic message that excludes stack traces, secrets, and internal diagnostics.
 7. THE Platform SHALL rely on Supabase defaults to encrypt data at rest (AES-256) and in transit (TLS).
 
+### Requirement 15: UI/UX Design System and Component States
+
+**User Story:** As a visitor, student, or operator, I want a consistent, accessible, token-driven interface where every screen handles loading, empty, and error conditions, so that the Platform is usable, teachable, and robust to customization.
+
+#### Acceptance Criteria
+
+1. THE Platform SHALL define a central design-token source of truth (a token file / Tailwind config) for color, typographic scale, spacing, border radii, and shadow depth, and all UI components SHALL draw these values from the tokens rather than hardcoding them.
+2. THE Platform SHALL provide dark and light mode with strict parity, driven by the design tokens.
+3. THE Platform SHALL restrict the palette to at most two primary/accent colors plus intentional neutrals, and SHALL meet WCAG 2.1 Level AA contrast for text and interactive elements.
+4. THE Platform SHALL provide reusable primitive components (at minimum: button, input/field, card, status badge, form row) that encode the required interactive states.
+5. WHERE an interactive element is rendered, THE Platform SHALL provide explicit hover, focus-visible (focus ring), active, and disabled states, with transitions in the 150ms–200ms ease-out range.
+6. WHEN a screen fetches data, THE Platform SHALL present a loading state (skeleton or spinner) until the data resolves.
+7. WHEN a data-driven screen has no data to show, THE Platform SHALL present an empty state with helpful guidance or a call to action rather than blank space.
+8. WHEN an input is invalid or an action fails, THE Platform SHALL present a clear error state with field-level validation feedback and a recovery action.
+9. THE Platform SHALL apply mobile-first responsive layout across all screens.
+10. THE Platform SHALL NOT use decorative anti-patterns (glowing mesh gradients, floating 3D glassmorphism blobs, oversized centered hero text with generic badge pills, or uniform equal-height 3-column card grids) unless a screen's requirements explicitly call for them.
+
 ## Correctness Properties (invariants the implementation must uphold)
 
 These restate the design's universal properties and are good candidates for instructor-maintained tests (off the student critical path):

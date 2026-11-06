@@ -35,3 +35,6 @@ next-env.d.ts
 
 # temp files (session scratch, safe to delete)
 /.tmp/
+
+# workflow run artifacts (review verdicts, task scratch)
+/.agents/
