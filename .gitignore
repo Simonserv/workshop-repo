@@ -38,3 +38,6 @@ next-env.d.ts
 
 # workflow run artifacts (review verdicts, task scratch)
 /.agents/
+
+# workflow git worktrees (isolated scratch checkouts)
+/.worktrees/
