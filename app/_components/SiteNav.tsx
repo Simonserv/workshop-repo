@@ -23,6 +23,9 @@ export default function SiteNav() {
             <Link href="/catalog">Catalog</Link>
           </li>
           <li>
+            <Link href="/admin">Dashboards</Link>
+          </li>
+          <li>
             <Link href="/login">Sign in</Link>
           </li>
         </ul>

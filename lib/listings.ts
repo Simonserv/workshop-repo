@@ -93,3 +93,222 @@ export async function getListingById(id: string): Promise<DbListing | null> {
 
   return (data as DbListing | null) ?? null;
 }
+
+/* ===========================================================================
+ * ADMIN listing management (task 9.4).
+ *
+ * Create / edit / publish-unpublish, guarded by `assertRole(['ADMIN'])` for a
+ * friendly 403. RLS remains authoritative: the listings insert/update policies
+ * (db/rls.sql §4.2) accept writes only when `current_user_role() = 'ADMIN'`, so
+ * a bypassed app check still cannot write. `image_url` is a site-relative
+ * `/images/` path (no object storage for catalog images — Requirement 11.5).
+ * Reads for the management grid reuse `getVisibleListings`, which under an
+ * Admin session returns published AND unpublished rows via RLS.
+ *
+ * Requirements: 11.1 (create), 11.2 (edit), 11.3 (publish/unpublish), 11.4
+ * (403 for non-Admin), 11.5 (`/images/` path).
+ * =========================================================================== */
+
+import { assertRole } from "@/lib/auth";
+
+/** The listing categories (mirrors the `listing_category` enum). */
+export const LISTING_CATEGORIES: readonly ListingCategory[] = [
+  "CONSULTING",
+  "WEB_DEV",
+  "CUSTOM_SOFTWARE",
+];
+
+/** The inquiry types (mirrors the `inquiry_type` enum). */
+export const INQUIRY_TYPES: readonly InquiryType[] = [
+  "DEMO",
+  "QUOTE",
+  "INQUIRE",
+];
+
+/** Editable fields of a listing (everything except id/created_at). */
+export interface ListingInput {
+  title?: unknown;
+  category?: unknown;
+  description?: unknown;
+  inquiry_type?: unknown;
+  image_url?: unknown;
+  is_published?: unknown;
+}
+
+/** Discriminated result for an Admin listing write. */
+export type ListingWriteResult =
+  | { ok: true; status: 200 | 201; id: string }
+  | { ok: false; status: 400 | 401 | 403 | 404 | 500; error: string };
+
+type NormalizedListing = {
+  title: string;
+  category: ListingCategory;
+  description: string;
+  inquiry_type: InquiryType;
+  image_url: string;
+  is_published: boolean;
+};
+
+/**
+ * Validates + normalizes listing input for create (all fields required) or
+ * edit. Returns either the normalized record or a field error message. The
+ * `image_url` must be a site-relative `/images/` path (Requirement 11.5).
+ */
+function normalizeListingInput(
+  input: ListingInput,
+): { ok: true; value: NormalizedListing } | { ok: false; error: string } {
+  const title = typeof input.title === "string" ? input.title.trim() : "";
+  if (title.length === 0) {
+    return { ok: false, error: "A title is required." };
+  }
+
+  const category = input.category;
+  if (
+    typeof category !== "string" ||
+    !(LISTING_CATEGORIES as readonly string[]).includes(category)
+  ) {
+    return { ok: false, error: "Choose a valid category." };
+  }
+
+  const description =
+    typeof input.description === "string" ? input.description.trim() : "";
+  if (description.length === 0) {
+    return { ok: false, error: "A description is required." };
+  }
+
+  const inquiryType = input.inquiry_type;
+  if (
+    typeof inquiryType !== "string" ||
+    !(INQUIRY_TYPES as readonly string[]).includes(inquiryType)
+  ) {
+    return { ok: false, error: "Choose a valid inquiry type." };
+  }
+
+  const imageUrl =
+    typeof input.image_url === "string" ? input.image_url.trim() : "";
+  if (!imageUrl.startsWith("/images/")) {
+    return {
+      ok: false,
+      error: "The image path must be a site-relative /images/ path.",
+    };
+  }
+
+  const isPublished = input.is_published === true;
+
+  return {
+    ok: true,
+    value: {
+      title,
+      category: category as ListingCategory,
+      description,
+      inquiry_type: inquiryType as InquiryType,
+      image_url: imageUrl,
+      is_published: isPublished,
+    },
+  };
+}
+
+/** Creates a listing (Admin only, Requirement 11.1). */
+export async function createListing(
+  input: ListingInput,
+): Promise<ListingWriteResult> {
+  const auth = await assertRole(["ADMIN"]);
+  if (!auth.ok) {
+    return {
+      ok: false,
+      status: auth.status,
+      error: auth.status === 401 ? "Unauthorized." : "Forbidden.",
+    };
+  }
+
+  const normalized = normalizeListingInput(input);
+  if (!normalized.ok) {
+    return { ok: false, status: 400, error: normalized.error };
+  }
+
+  const supabase = createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("listings")
+    .insert(normalized.value)
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    return { ok: false, status: 500, error: "Could not create the listing." };
+  }
+
+  return { ok: true, status: 201, id: data.id };
+}
+
+/** Edits a listing's fields (Admin only, Requirement 11.2). */
+export async function updateListing(
+  id: string,
+  input: ListingInput,
+): Promise<ListingWriteResult> {
+  const auth = await assertRole(["ADMIN"]);
+  if (!auth.ok) {
+    return {
+      ok: false,
+      status: auth.status,
+      error: auth.status === 401 ? "Unauthorized." : "Forbidden.",
+    };
+  }
+  if (!id) {
+    return { ok: false, status: 400, error: "Missing listing id." };
+  }
+
+  const normalized = normalizeListingInput(input);
+  if (!normalized.ok) {
+    return { ok: false, status: 400, error: normalized.error };
+  }
+
+  const supabase = createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("listings")
+    .update(normalized.value)
+    .eq("id", id)
+    .select("id");
+
+  if (error) {
+    return { ok: false, status: 500, error: "Could not update the listing." };
+  }
+  if (!data || data.length === 0) {
+    return { ok: false, status: 404, error: "Listing not found." };
+  }
+
+  return { ok: true, status: 200, id };
+}
+
+/** Publishes or unpublishes a listing (Admin only, Requirement 11.3). */
+export async function setListingPublished(
+  id: string,
+  isPublished: boolean,
+): Promise<ListingWriteResult> {
+  const auth = await assertRole(["ADMIN"]);
+  if (!auth.ok) {
+    return {
+      ok: false,
+      status: auth.status,
+      error: auth.status === 401 ? "Unauthorized." : "Forbidden.",
+    };
+  }
+  if (!id) {
+    return { ok: false, status: 400, error: "Missing listing id." };
+  }
+
+  const supabase = createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("listings")
+    .update({ is_published: isPublished })
+    .eq("id", id)
+    .select("id");
+
+  if (error) {
+    return { ok: false, status: 500, error: "Could not update the listing." };
+  }
+  if (!data || data.length === 0) {
+    return { ok: false, status: 404, error: "Listing not found." };
+  }
+
+  return { ok: true, status: 200, id };
+}

@@ -145,3 +145,282 @@ export async function getMyMembership(): Promise<MyMembershipResult> {
     membershipStatus: data.membership_status as MembershipStatus,
   };
 }
+
+/* ===========================================================================
+ * Staff/Admin membership receipt REVIEW (task 9.2).
+ *
+ * These functions are the Staff/Admin side of the Membership component. They
+ * are guarded by `assertRole(['STAFF','ADMIN'])` for a friendly 401/403, but
+ * RLS remains authoritative: the receipt read/update policies (db/rls.sql §4.4)
+ * expose/accept these rows only for STAFF/ADMIN, and approval goes through the
+ * SECURITY DEFINER `approve_receipt()` function (§4.7), the ONLY path that sets
+ * MEMBER (Correctness Property 1). Receipts are viewed only via short-lived
+ * signed URLs minted here (Requirement 10.2/10.4; Correctness Property 3).
+ *
+ * Requirements: 8.3 (approve → MEMBER, transactional), 8.5 (reject with
+ * reason), 8.6 (409 on non-PENDING), 10.2/10.3/10.4 (signed-URL viewing,
+ * Staff/Admin only), 12.3/12.5 (review dashboard + guard).
+ * =========================================================================== */
+
+import { createSignedUrl } from "@/lib/storage/receipts";
+
+/** A membership receipt row as presented in the review dashboard. */
+export interface DbMembershipReceipt {
+  id: string;
+  user_id: string;
+  file_key: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  reviewed_by: string | null;
+  review_note: string | null;
+  created_at: string;
+  /** Owning user's email for reviewer context (RLS exposes to Staff/Admin). */
+  user: { email: string | null } | null;
+  /** Short-lived signed URL to view the receipt file; null if minting failed. */
+  viewUrl: string | null;
+}
+
+const RECEIPT_COLUMNS =
+  "id, user_id, file_key, status, reviewed_by, review_note, created_at, user:profiles!membership_receipts_user_id_fkey(email)";
+
+/** Discriminated result for the pending-receipts list. */
+export type ListPendingReceiptsResult =
+  | { ok: true; status: 200; receipts: DbMembershipReceipt[] }
+  | { ok: false; status: 401 | 403 | 500; error: string };
+
+/**
+ * Lists PENDING membership receipts for review, ordered by `created_at`
+ * (oldest first, so the longest-waiting receipt is handled first), each with a
+ * freshly-minted short-lived signed view URL (Requirements 8.5-ordering, 10.2,
+ * 12.3). Guarded by `assertRole(['STAFF','ADMIN'])`; RLS independently scopes
+ * the read to Staff/Admin.
+ */
+export async function listPendingReceipts(): Promise<ListPendingReceiptsResult> {
+  const auth = await assertRole(["STAFF", "ADMIN"]);
+  if (!auth.ok) {
+    return {
+      ok: false,
+      status: auth.status,
+      error: auth.status === 401 ? "Unauthorized." : "Forbidden.",
+    };
+  }
+
+  const supabase = createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("membership_receipts")
+    .select(RECEIPT_COLUMNS)
+    .eq("status", "PENDING")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    return { ok: false, status: 500, error: "Unable to load receipts." };
+  }
+
+  // Supabase types an embedded to-one relation as an array; normalize the
+  // joined user to the single object (or null) it is at runtime.
+  const rows = (
+    (data ?? []) as unknown as (Omit<
+      DbMembershipReceipt,
+      "viewUrl" | "user"
+    > & {
+      user: { email: string | null } | { email: string | null }[] | null;
+    })[]
+  ).map((row) => ({
+    ...row,
+    user: Array.isArray(row.user) ? (row.user[0] ?? null) : row.user,
+  }));
+
+  // Mint a signed URL per receipt. A single failure must not fail the whole
+  // list — that receipt simply renders without a view link.
+  const receipts: DbMembershipReceipt[] = await Promise.all(
+    rows.map(async (row) => {
+      let viewUrl: string | null = null;
+      try {
+        viewUrl = await createSignedUrl(row.file_key);
+      } catch {
+        viewUrl = null;
+      }
+      return { ...row, viewUrl };
+    }),
+  );
+
+  return { ok: true, status: 200, receipts };
+}
+
+/** Discriminated result for a receipt review action (approve / reject). */
+export type ReviewReceiptResult =
+  | { ok: true; status: 200; receiptStatus: "APPROVED" | "REJECTED" }
+  | { ok: false; status: 400 | 401 | 403 | 404 | 409 | 500; error: string };
+
+/**
+ * Approves a membership receipt (Requirement 8.3). Delegates to the
+ * transactional `approve_receipt()` Postgres function (db/rls.sql §4.7), which
+ * atomically sets the receipt to APPROVED and the owning user to MEMBER — the
+ * ONLY path that grants membership. The function enforces its own Staff/Admin
+ * guard, 404 when the receipt is absent, and 409 when it is not PENDING (review
+ * is terminal and single — Requirement 8.6, Correctness Property 5); we map
+ * those SQLSTATE codes to HTTP statuses.
+ */
+export async function approveReceipt(
+  receiptId: string,
+): Promise<ReviewReceiptResult> {
+  const auth = await assertRole(["STAFF", "ADMIN"]);
+  if (!auth.ok) {
+    return {
+      ok: false,
+      status: auth.status,
+      error: auth.status === 401 ? "Unauthorized." : "Forbidden.",
+    };
+  }
+  if (!receiptId) {
+    return { ok: false, status: 400, error: "Missing receipt id." };
+  }
+
+  const supabase = createServerSupabaseClient();
+  const { error } = await supabase.rpc("approve_receipt", {
+    p_receipt_id: receiptId,
+  });
+
+  if (error) {
+    // Map the SQLSTATE codes raised by approve_receipt() to HTTP statuses.
+    switch (error.code) {
+      case "P0002": // no_data_found → receipt not found
+        return { ok: false, status: 404, error: "Receipt not found." };
+      case "23505": // mapped in the function to "already reviewed"
+        return {
+          ok: false,
+          status: 409,
+          error: "This receipt has already been reviewed.",
+        };
+      case "42501": // insufficient_privilege (defense in depth)
+        return { ok: false, status: 403, error: "Forbidden." };
+      default:
+        return { ok: false, status: 500, error: "Could not approve the receipt." };
+    }
+  }
+
+  return { ok: true, status: 200, receiptStatus: "APPROVED" };
+}
+
+/**
+ * Rejects a membership receipt with a reason (Requirement 8.5). Rejection does
+ * NOT grant membership, so it is a plain guarded UPDATE (RLS §4.4 restricts it
+ * to Staff/Admin) rather than the approval RPC. To keep review terminal and
+ * single (Requirement 8.6, Property 5), the update is conditioned on the
+ * receipt still being PENDING; a non-PENDING receipt matches no row → 409.
+ */
+export async function rejectReceipt(
+  receiptId: string,
+  reason: string,
+): Promise<ReviewReceiptResult> {
+  const auth = await assertRole(["STAFF", "ADMIN"]);
+  if (!auth.ok) {
+    return {
+      ok: false,
+      status: auth.status,
+      error: auth.status === 401 ? "Unauthorized." : "Forbidden.",
+    };
+  }
+  if (!receiptId) {
+    return { ok: false, status: 400, error: "Missing receipt id." };
+  }
+  const note = reason.trim();
+  if (note.length === 0) {
+    return { ok: false, status: 400, error: "A rejection reason is required." };
+  }
+
+  const supabase = createServerSupabaseClient();
+  // Confirm the receipt exists so we can tell 404 (absent) from 409 (already
+  // reviewed) — both otherwise produce an empty update result.
+  const { data: existing, error: readError } = await supabase
+    .from("membership_receipts")
+    .select("id, status")
+    .eq("id", receiptId)
+    .maybeSingle();
+
+  if (readError) {
+    return { ok: false, status: 500, error: "Could not reject the receipt." };
+  }
+  if (!existing) {
+    return { ok: false, status: 404, error: "Receipt not found." };
+  }
+  if (existing.status !== "PENDING") {
+    return {
+      ok: false,
+      status: 409,
+      error: "This receipt has already been reviewed.",
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("membership_receipts")
+    .update({
+      status: "REJECTED",
+      reviewed_by: auth.userId,
+      review_note: note,
+    })
+    .eq("id", receiptId)
+    .eq("status", "PENDING")
+    .select("id");
+
+  if (error) {
+    return { ok: false, status: 500, error: "Could not reject the receipt." };
+  }
+  if (!data || data.length === 0) {
+    // Raced with another reviewer between the read and the update.
+    return {
+      ok: false,
+      status: 409,
+      error: "This receipt has already been reviewed.",
+    };
+  }
+
+  return { ok: true, status: 200, receiptStatus: "REJECTED" };
+}
+
+/** Discriminated result for minting a single receipt view URL. */
+export type ReceiptViewUrlResult =
+  | { ok: true; status: 200; url: string }
+  | { ok: false; status: 401 | 403 | 404 | 500; error: string };
+
+/**
+ * Mints a short-lived signed URL to view one receipt (the design's
+ * `getReceiptViewUrl` algorithm). Guarded by `assertRole(['STAFF','ADMIN'])`
+ * so a non-Staff/Admin caller is denied (Requirement 10.4); a receipt the
+ * caller cannot read under RLS is reported as 404 without leaking existence.
+ */
+export async function getReceiptViewUrl(
+  receiptId: string,
+): Promise<ReceiptViewUrlResult> {
+  const auth = await assertRole(["STAFF", "ADMIN"]);
+  if (!auth.ok) {
+    return {
+      ok: false,
+      status: auth.status,
+      error: auth.status === 401 ? "Unauthorized." : "Forbidden.",
+    };
+  }
+  if (!receiptId) {
+    return { ok: false, status: 404, error: "Receipt not found." };
+  }
+
+  const supabase = createServerSupabaseClient();
+  const { data: receipt, error } = await supabase
+    .from("membership_receipts")
+    .select("file_key")
+    .eq("id", receiptId)
+    .maybeSingle();
+
+  if (error) {
+    return { ok: false, status: 500, error: "Could not load the receipt." };
+  }
+  if (!receipt) {
+    return { ok: false, status: 404, error: "Receipt not found." };
+  }
+
+  try {
+    const url = await createSignedUrl(receipt.file_key);
+    return { ok: true, status: 200, url };
+  } catch {
+    return { ok: false, status: 500, error: "Could not create a view link." };
+  }
+}

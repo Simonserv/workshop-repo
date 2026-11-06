@@ -148,3 +148,209 @@ export async function submitDonation(
     };
   }
 }
+
+/* ===========================================================================
+ * Staff/Admin donation REVIEW (task 9.3).
+ *
+ * The Staff/Admin side of the Donation component: a status-filtered list with
+ * signed receipt view URLs, plus verify / reject actions. Guarded by
+ * `assertRole(['STAFF','ADMIN'])` for a friendly 401/403, with RLS (db/rls.sql
+ * §4.5) as the authoritative boundary — donations are readable/updatable only
+ * by STAFF/ADMIN. Review is terminal and single: verifying or rejecting a
+ * non-PENDING donation returns 409 (Requirement 9.9, Correctness Property 5).
+ * Receipts are viewed only via short-lived signed URLs (Requirement 10).
+ *
+ * Requirements: 9.7 (verify → VERIFIED), 9.8 (reject with reason), 9.9 (409 on
+ * non-PENDING), 12.4/12.5 (review dashboard + guard).
+ * =========================================================================== */
+
+import { assertRole } from "@/lib/auth";
+import { createSignedUrl } from "@/lib/storage/receipts";
+
+/** The three donation states (mirrors the `donation_status` enum). */
+export type DonationStatus = "PENDING" | "VERIFIED" | "REJECTED";
+
+/** The set of valid donation statuses, for server-side filter validation. */
+export const DONATION_STATUSES: readonly DonationStatus[] = [
+  "PENDING",
+  "VERIFIED",
+  "REJECTED",
+];
+
+/** A donation row as presented in the review dashboard. */
+export interface DbDonation {
+  id: string;
+  donor_name: string | null;
+  donor_email: string | null;
+  amount: number;
+  file_key: string;
+  status: DonationStatus;
+  reviewed_by: string | null;
+  review_note: string | null;
+  created_at: string;
+  /** Short-lived signed URL to view the receipt file; null if minting failed. */
+  viewUrl: string | null;
+}
+
+const DONATION_COLUMNS =
+  "id, donor_name, donor_email, amount, file_key, status, reviewed_by, review_note, created_at";
+
+/** Discriminated result for the Staff/Admin donation list. */
+export type ListDonationsResult =
+  | { ok: true; status: 200; donations: DbDonation[] }
+  | { ok: false; status: 401 | 403 | 500; error: string };
+
+/**
+ * Lists donations for review, newest first, optionally filtered by status
+ * (Requirement 12.4). Each row carries a freshly-minted short-lived signed
+ * receipt view URL (Requirement 10.2). Guarded by `assertRole`; RLS scopes the
+ * read to Staff/Admin.
+ */
+export async function listDonations(
+  statusFilter?: string | null,
+): Promise<ListDonationsResult> {
+  const auth = await assertRole(["STAFF", "ADMIN"]);
+  if (!auth.ok) {
+    return {
+      ok: false,
+      status: auth.status,
+      error: auth.status === 401 ? "Unauthorized." : "Forbidden.",
+    };
+  }
+
+  const supabase = createServerSupabaseClient();
+  let query = supabase
+    .from("donations")
+    .select(DONATION_COLUMNS)
+    .order("created_at", { ascending: false });
+
+  if (
+    statusFilter &&
+    (DONATION_STATUSES as readonly string[]).includes(statusFilter)
+  ) {
+    query = query.eq("status", statusFilter);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    return { ok: false, status: 500, error: "Unable to load donations." };
+  }
+
+  const rows = (data ?? []) as Omit<DbDonation, "viewUrl">[];
+  const donations: DbDonation[] = await Promise.all(
+    rows.map(async (row) => {
+      let viewUrl: string | null = null;
+      try {
+        viewUrl = await createSignedUrl(row.file_key);
+      } catch {
+        viewUrl = null;
+      }
+      return { ...row, viewUrl };
+    }),
+  );
+
+  return { ok: true, status: 200, donations };
+}
+
+/** Discriminated result for a donation review action (verify / reject). */
+export type ReviewDonationResult =
+  | { ok: true; status: 200; donationStatus: "VERIFIED" | "REJECTED" }
+  | { ok: false; status: 400 | 401 | 403 | 404 | 409 | 500; error: string };
+
+/**
+ * Transitions a PENDING donation to a terminal review state. Shared by verify
+ * and reject: both are guarded Staff/Admin UPDATEs conditioned on the donation
+ * still being PENDING, so a non-PENDING donation yields 409 (Requirement 9.9,
+ * Property 5). A rejection requires a non-empty reason (Requirement 9.8).
+ */
+async function reviewDonation(
+  donationId: string,
+  target: "VERIFIED" | "REJECTED",
+  reason?: string,
+): Promise<ReviewDonationResult> {
+  const auth = await assertRole(["STAFF", "ADMIN"]);
+  if (!auth.ok) {
+    return {
+      ok: false,
+      status: auth.status,
+      error: auth.status === 401 ? "Unauthorized." : "Forbidden.",
+    };
+  }
+  if (!donationId) {
+    return { ok: false, status: 400, error: "Missing donation id." };
+  }
+
+  let note: string | null = null;
+  if (target === "REJECTED") {
+    note = (reason ?? "").trim();
+    if (note.length === 0) {
+      return {
+        ok: false,
+        status: 400,
+        error: "A rejection reason is required.",
+      };
+    }
+  }
+
+  const supabase = createServerSupabaseClient();
+  // Distinguish 404 (absent) from 409 (already reviewed).
+  const { data: existing, error: readError } = await supabase
+    .from("donations")
+    .select("id, status")
+    .eq("id", donationId)
+    .maybeSingle();
+
+  if (readError) {
+    return { ok: false, status: 500, error: "Could not update the donation." };
+  }
+  if (!existing) {
+    return { ok: false, status: 404, error: "Donation not found." };
+  }
+  if (existing.status !== "PENDING") {
+    return {
+      ok: false,
+      status: 409,
+      error: "This donation has already been reviewed.",
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("donations")
+    .update({
+      status: target,
+      reviewed_by: auth.userId,
+      review_note: note,
+    })
+    .eq("id", donationId)
+    .eq("status", "PENDING")
+    .select("id");
+
+  if (error) {
+    return { ok: false, status: 500, error: "Could not update the donation." };
+  }
+  if (!data || data.length === 0) {
+    // Raced with another reviewer between the read and the update.
+    return {
+      ok: false,
+      status: 409,
+      error: "This donation has already been reviewed.",
+    };
+  }
+
+  return { ok: true, status: 200, donationStatus: target };
+}
+
+/** Verifies a PENDING donation → VERIFIED (Requirement 9.7). */
+export function verifyDonation(
+  donationId: string,
+): Promise<ReviewDonationResult> {
+  return reviewDonation(donationId, "VERIFIED");
+}
+
+/** Rejects a PENDING donation with a reason → REJECTED (Requirement 9.8). */
+export function rejectDonation(
+  donationId: string,
+  reason: string,
+): Promise<ReviewDonationResult> {
+  return reviewDonation(donationId, "REJECTED", reason);
+}
