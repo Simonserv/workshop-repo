@@ -196,6 +196,7 @@ Grouped by session. Each step is "open this file / change these values / save / 
 - **Each student owns their own stack:** their own GitHub fork, Supabase project, Vercel project, and `.env`. There is no shared backend. The repo author ships provisioning scripts + a setup checklist (Part A task 10); students apply them to their own project (Part B task 13.1). Account sign-ups are a prerequisite before Session 1 to protect the 12:30–4:00 × 3-day timeframe.
 - **Images** are pre-committed static files under `public/images/`; `image_url` is a site-relative path. No runtime object storage for catalog images (only receipts use private Storage).
 - **Tests** (`*`) are instructor-maintained and optional; students do not write tests.
+- **Part B (tasks 12–14) stays unchecked in this repo:** those are live, per-student activities (fork, provision their own Supabase, paste their own keys, operate the dashboards) run during the three workshop sessions, not repo-author deliverables. All Part A enablement is complete and verified — the app, dashboards, provisioning scripts (`db/setup.sql`, `db/seed.sql`, `db/seed-roles.sql`), `.env.example`, the `receipts` bucket convention, and the student-facing Session 1/2/3 references — so the repo is **workshop-ready**. Each student tracks 12–14 on their own stack during the sessions.
 
 ## Task Dependency Graph
 
