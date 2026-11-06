@@ -97,13 +97,13 @@ These prepare the ready-to-run repository and the provisioning scripts students 
   - [x] 7.4 Inquiry submission: route handler validating non-empty name/details + valid email (400 + field errors, persist nothing on failure); reject inactive/nonexistent listing (400); sanitize; persist status NEW; associate owner_id when authenticated; form wired with success/error states
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
 
-- [ ] 8. Implement membership and donations
+- [x] 8. Implement membership and donations
   - All user-facing screens in this task MUST compose the Task 6.5 primitives/tokens and implement the required loading, empty, error, and interactive states (Requirement 15)
-  - [ ] 8.1 `payment-info` endpoints returning the GCash QR info from site config (membership + donations)
+  - [x] 8.1 `payment-info` endpoints returning the GCash QR info from site config (membership + donations)
     - _Requirements: 8.1, 9.1_
-  - [ ] 8.2 Membership receipt upload (authenticated): validate file, store privately, persist receipt PENDING; `getMyMembership`
+  - [x] 8.2 Membership receipt upload (authenticated): validate file, store privately, persist receipt PENDING; `getMyMembership`
     - _Requirements: 8.2, 8.7, 8.8, 10.1_
-  - [ ] 8.3 Donation submission (public): reject amount<=0 (400); validate file; store privately; persist PENDING; handle anonymous vs one-field donor cases
+  - [x] 8.3 Donation submission (public): reject amount<=0 (400); validate file; store privately; persist PENDING; handle anonymous vs one-field donor cases
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.10_
 
 - [ ] 9. Implement Staff/Admin dashboards (finished features students will operate)
