@@ -106,20 +106,20 @@ These prepare the ready-to-run repository and the provisioning scripts students 
   - [x] 8.3 Donation submission (public): reject amount<=0 (400); validate file; store privately; persist PENDING; handle anonymous vs one-field donor cases
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.10_
 
-- [ ] 9. Implement Staff/Admin dashboards (finished features students will operate)
+- [x] 9. Implement Staff/Admin dashboards (finished features students will operate)
   - All dashboard screens in this task MUST compose the Task 6.5 primitives/tokens and implement the required loading, empty, error, and interactive states (Requirement 15); use StatusBadge for record statuses
-  - [ ] 9.1 Inquiry triage: list all (status-filtered), update status, set handled_by; guarded by `assertRole(['STAFF','ADMIN'])`; escape rendered text
+  - [x] 9.1 Inquiry triage: list all (status-filtered), update status, set handled_by; guarded by `assertRole(['STAFF','ADMIN'])`; escape rendered text
     - _Requirements: 12.1, 12.2, 12.5, 12.6_
-  - [ ] 9.2 Membership receipt review: list PENDING with signed view URLs ordered by created_at; approve (transactional → MEMBER); reject with reason; 409 on non-PENDING; `getReceiptViewUrl` denies non-Staff/Admin
+  - [x] 9.2 Membership receipt review: list PENDING with signed view URLs ordered by created_at; approve (transactional → MEMBER); reject with reason; 409 on non-PENDING; `getReceiptViewUrl` denies non-Staff/Admin
     - _Requirements: 8.3, 8.5, 8.6, 10.2, 10.3, 10.4, 12.3, 12.5_
-  - [ ] 9.3 Donation review: status-filtered list; verify (→VERIFIED); reject with reason; 409 on non-PENDING; signed URLs for receipts
+  - [x] 9.3 Donation review: status-filtered list; verify (→VERIFIED); reject with reason; 409 on non-PENDING; signed URLs for receipts
     - _Requirements: 9.7, 9.8, 9.9, 12.4, 12.5_
-  - [ ] 9.4 Admin listing management: create/edit/publish-unpublish guarded by `assertRole(['ADMIN'])` (403 otherwise); `image_url` as `/images/` path; management UI
+  - [x] 9.4 Admin listing management: create/edit/publish-unpublish guarded by `assertRole(['ADMIN'])` (403 otherwise); `image_url` as `/images/` path; management UI
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
-  - [ ] 9.5 Admin user management: list members; assign/change role via the server-only service-role client; guarded by `assertRole(['ADMIN'])` (403 otherwise); UI
+  - [x] 9.5 Admin user management: list members; assign/change role via the server-only service-role client; guarded by `assertRole(['ADMIN'])` (403 otherwise); UI
     - _Requirements: 13.1, 13.2, 13.3, 14.1, 14.4_
 
-- [ ] 10. Ship the provisioning scripts and setup guide (students run these on their OWN project)
+- [x] 10. Ship the provisioning scripts and setup guide (students run these on their OWN project)
   - Provide `db/setup.sql` bundling schema + RLS + the approval function, idempotent so a student can re-run it safely
   - Provide `db/seed.sql` inserting a mix of published/unpublished listings referencing committed `public/images/` files
   - Provide `db/seed-roles.sql` with the steps/SQL to set the student's own Admin/Staff/User roles (via the service-role client)
@@ -128,7 +128,7 @@ These prepare the ready-to-run repository and the provisioning scripts students 
   - The student-facing guides already exist in `docs/workshop/` (Prerequisites + Session 1/2/3 references); keep script names in sync with them
   - _Requirements: 2.1, 2.3, 6.2, 11.5, 13.1, 14.3, 14.4_
 
-- [ ]* 11. Instructor test + hardening pass (optional, off student critical path)
+- [x]* 11. Instructor test + hardening pass (optional, off student critical path)
   - Property tests for the seven invariants; unit tests for 401/403, validation, review 409 paths
   - Verify no server-only secret appears in any client bundle; only anon key + URL use `NEXT_PUBLIC_`
   - Confirm unauthorized privileged actions return 403, invalid/expired sessions 401, and RLS denies forbidden rows even if the app check is bypassed
