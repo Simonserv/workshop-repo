@@ -28,19 +28,19 @@ These prepare the ready-to-run repository and the provisioning scripts students 
   - Add base styling and a home route placeholder so it runs locally and deploys
   - _Requirements: 1.1, 1.2, 1.4_
 
-- [ ] 2. Configure environment variables and Supabase client factories
+- [x] 2. Configure environment variables and Supabase client factories
   - [x] 2.1 Define the env contract and example file
     - Declare `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` as the only public vars
     - Declare `SUPABASE_SERVICE_ROLE_KEY` as server-only (never `NEXT_PUBLIC_`)
     - Add `.env.example` documenting each key and its exposure scope (this is what students paste into)
     - _Requirements: 14.3, 14.4_
-  - [ ] 2.2 Implement browser, server, and service-role Supabase clients
+  - [x] 2.2 Implement browser, server, and service-role Supabase clients
     - Browser client (anon key + URL) for client components
     - Role-aware server client that reads the session JWT from cookies (so RLS applies) for Server Components and route handlers
     - Service-role client confined to server-only modules for the few privileged admin writes (role assignment)
     - _Requirements: 6.1, 6.4, 14.4, 14.5_
 
-- [ ] 3. Create the database schema (profiles, listings, inquiries, membership_receipts, donations)
+- [x] 3. Create the database schema (profiles, listings, inquiries, membership_receipts, donations)
   - `profiles`: id (==auth.users.id), email, `role` constrained to `ADMIN`/`STAFF`/`USER` default `USER`, `membership_status` `MEMBER`/`NON_MEMBER` default `NON_MEMBER`, created_at
   - `listings`: id, title, category enum, description, `inquiry_type` enum (DEMO/QUOTE/INQUIRE), `image_url` (site-relative under `/images/`), `is_published` default false, created_at
   - `inquiries`: id, `listing_id` FK, nullable `owner_id` FK (anonymous allowed), customer fields, `status` NEW/IN_PROGRESS/CLOSED default NEW, nullable `handled_by` FK, created_at
@@ -50,20 +50,20 @@ These prepare the ready-to-run repository and the provisioning scripts students 
   - Indexes on `inquiries.status`, `membership_receipts.status`, `donations.status`, `listings.is_published` plus FK indexes
   - _Requirements: 4.3, 5.1, 5.5, 6.2, 8.2, 9.2, 11.5_
 
-- [ ] 4. Define Row Level Security policies (the authoritative access boundary)
-  - [ ] 4.1 SQL helper to resolve the caller's role from `profiles` by `auth.uid()`; used inside all policies so role is never client-supplied
+- [x] 4. Define Row Level Security policies (the authoritative access boundary)
+  - [x] 4.1 SQL helper to resolve the caller's role from `profiles` by `auth.uid()`; used inside all policies so role is never client-supplied
     - _Requirements: 6.1, 6.3, 7.1_
-  - [ ] 4.2 Enable RLS + listing policies: read published to anon/USER, read all to STAFF/ADMIN; insert/update/publish restricted to ADMIN
+  - [x] 4.2 Enable RLS + listing policies: read published to anon/USER, read all to STAFF/ADMIN; insert/update/publish restricted to ADMIN
     - _Requirements: 2.1, 2.2, 2.3, 2.5, 3.1, 3.2, 3.3, 7.1, 11.1, 11.2, 11.3_
-  - [ ] 4.3 Enable RLS + inquiry policies: anon + authenticated insert; USER reads own, STAFF/ADMIN read all; status/handled_by updates STAFF/ADMIN only
+  - [x] 4.3 Enable RLS + inquiry policies: anon + authenticated insert; USER reads own, STAFF/ADMIN read all; status/handled_by updates STAFF/ADMIN only
     - _Requirements: 4.1, 4.2, 7.2, 7.3, 7.4, 7.5, 12.1, 12.2_
-  - [ ] 4.4 Enable RLS + membership_receipt policies: user inserts own PENDING; USER reads own, STAFF/ADMIN read all; review (status) updates STAFF/ADMIN only
+  - [x] 4.4 Enable RLS + membership_receipt policies: user inserts own PENDING; USER reads own, STAFF/ADMIN read all; review (status) updates STAFF/ADMIN only
     - _Requirements: 7.2, 7.3, 7.4, 8.2, 8.3, 8.5_
-  - [ ] 4.5 Enable RLS + donation policies: anon insert (amount>0 by CHECK); STAFF/ADMIN read all; review updates STAFF/ADMIN only
+  - [x] 4.5 Enable RLS + donation policies: anon insert (amount>0 by CHECK); STAFF/ADMIN read all; review updates STAFF/ADMIN only
     - _Requirements: 9.1, 9.2, 9.4, 7.3, 7.4_
-  - [ ] 4.6 Enable RLS + profiles policies: member reads own, ADMIN reads all; role change ADMIN-only (service-role client)
+  - [x] 4.6 Enable RLS + profiles policies: member reads own, ADMIN reads all; role change ADMIN-only (service-role client)
     - _Requirements: 7.1, 13.1, 13.2, 13.3_
-  - [ ] 4.7 Transactional approval: a Postgres function that sets receipt→APPROVED + user→MEMBER atomically
+  - [x] 4.7 Transactional approval: a Postgres function that sets receipt→APPROVED + user→MEMBER atomically
     - _Requirements: 8.3, 8.4_
 
 - [ ] 5. Implement server-side auth and role helpers

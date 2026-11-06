@@ -20,4 +20,3 @@ A three-session workshop where you build a three-tier catalog and membership web
 | 2 | Create your Supabase backend, run SQL, paste your keys | Inquiries, receipts, and donations that persist |
 | 3 | Seed roles, operate dashboards, final deploy | A working site you fully own |
 
-> Everything stays on free tiers. There is no shared backend, so your project is entirely your own.
