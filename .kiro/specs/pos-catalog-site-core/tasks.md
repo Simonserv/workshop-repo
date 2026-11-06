@@ -78,7 +78,16 @@ These prepare the ready-to-run repository and the provisioning scripts students 
   - Shared file validation: content-type allow-list (image/*, application/pdf) + size cap
   - _Requirements: 10.1, 10.2, 8.8, 9.10_
 
+- [x] 6.5 Establish the UI/UX design system foundation (must precede all UI tasks)
+  - Create the central design-token source of truth (token file / Tailwind config): color roles with ≤2 accents + neutrals and **dark/light parity**, a typographic scale, a spacing scale, unified radii, shadow-depth rules, and motion tokens (150–200ms ease-out); meet WCAG AA contrast
+  - Build the reusable primitive components — Button (variants + hover/focus-visible/active/disabled), Field/Input (label + inline error), Card, StatusBadge (status→token color), and a FormRow/Feedback pattern — each encoding the required interactive states
+  - Provide shared Loading (skeleton/spinner), Empty (guidance/CTA), and Error (field-level + recovery) building blocks that later screens reuse
+  - Refactor the existing scaffold pages (landing, catalog, login, SiteNav, layout, globals) to consume tokens + primitives: remove inline/hardcoded styles, add a catalog empty state, wire the dark/light tokens, and align radii/spacing to the scale
+  - No banned tropes (mesh gradients, glassmorphism blobs, oversized hero + badge pills, uniform equal-height 3-col grids) unless explicitly required
+  - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 15.7, 15.8, 15.9, 15.10_
+
 - [ ] 7. Implement public pages and flows
+  - All screens in this task MUST compose the Task 6.5 primitives/tokens and implement the required loading, empty, error, and interactive states (Requirement 15)
   - [ ] 7.1 Landing page (no auth, same for anon/authenticated), text/branding from the editable content/config file, nav to catalog
     - _Requirements: 1.1, 1.2, 1.3, 1.4_
   - [ ] 7.2 Catalog listing via the role-aware server client (RLS returns published for anon/USER, all for Staff/Admin); render title + `/images/` image; link to detail
@@ -89,6 +98,7 @@ These prepare the ready-to-run repository and the provisioning scripts students 
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
 
 - [ ] 8. Implement membership and donations
+  - All user-facing screens in this task MUST compose the Task 6.5 primitives/tokens and implement the required loading, empty, error, and interactive states (Requirement 15)
   - [ ] 8.1 `payment-info` endpoints returning the GCash QR info from site config (membership + donations)
     - _Requirements: 8.1, 9.1_
   - [ ] 8.2 Membership receipt upload (authenticated): validate file, store privately, persist receipt PENDING; `getMyMembership`
@@ -97,6 +107,7 @@ These prepare the ready-to-run repository and the provisioning scripts students 
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.10_
 
 - [ ] 9. Implement Staff/Admin dashboards (finished features students will operate)
+  - All dashboard screens in this task MUST compose the Task 6.5 primitives/tokens and implement the required loading, empty, error, and interactive states (Requirement 15); use StatusBadge for record statuses
   - [ ] 9.1 Inquiry triage: list all (status-filtered), update status, set handled_by; guarded by `assertRole(['STAFF','ADMIN'])`; escape rendered text
     - _Requirements: 12.1, 12.2, 12.5, 12.6_
   - [ ] 9.2 Membership receipt review: list PENDING with signed view URLs ordered by created_at; approve (transactional → MEMBER); reject with reason; 409 on non-PENDING; `getReceiptViewUrl` denies non-Staff/Admin
@@ -196,15 +207,16 @@ Grouped by session. Each step is "open this file / change these values / save / 
     { "id": 2, "tasks": ["4.1"] },
     { "id": 3, "tasks": ["4.2", "4.3", "4.4", "4.5", "4.6", "4.7"] },
     { "id": 4, "tasks": ["5", "6"] },
-    { "id": 5, "tasks": ["7.1", "7.2", "7.3", "7.4", "8.1", "8.2", "8.3"] },
-    { "id": 6, "tasks": ["9.1", "9.2", "9.3", "9.4", "9.5"] },
-    { "id": 7, "tasks": ["10"] },
-    { "id": 8, "tasks": ["11"] },
-    { "id": 9, "tasks": ["12"] },
-    { "id": 10, "tasks": ["13"] },
-    { "id": 11, "tasks": ["14"] }
+    { "id": 5, "tasks": ["6.5"] },
+    { "id": 6, "tasks": ["7.1", "7.2", "7.3", "7.4", "8.1", "8.2", "8.3"] },
+    { "id": 7, "tasks": ["9.1", "9.2", "9.3", "9.4", "9.5"] },
+    { "id": 8, "tasks": ["10"] },
+    { "id": 9, "tasks": ["11"] },
+    { "id": 10, "tasks": ["12"] },
+    { "id": 11, "tasks": ["13"] },
+    { "id": 12, "tasks": ["14"] }
   ]
 }
 ```
 
-Note: waves 0–8 are Part A (build order; the repo + provisioning scripts in task 10 must exist before the workshop). Waves 9–11 are Part B student sessions and run on three separate days; each student provisions their own backend during Session 2 (task 13.1).
+Note: waves 0–9 are Part A (build order; the repo + provisioning scripts in task 10 must exist before the workshop). The UI design-system foundation (task 6.5, wave 5) is a hard prerequisite for every UI task (7.x, 8.x, 9.x), so it precedes them. Waves 10–12 are Part B student sessions and run on three separate days; each student provisions their own backend during Session 2 (task 13.1).

@@ -1,0 +1,183 @@
+/**
+ * theme.css — DESIGN TOKEN SOURCE OF TRUTH (infrastructure; students do NOT edit)
+ *
+ * This is the single place raw design values live. Every component and page
+ * draws color, type, spacing, radius, shadow, and motion from these tokens —
+ * nothing hardcodes a design value outside this file (Requirement 15.1).
+ *
+ * Dark and light modes are defined with strict parity: the same semantic role
+ * tokens exist in both, so swapping theme never changes layout, only values
+ * (Requirement 15.2). Light mode is applied via `prefers-color-scheme` and can
+ * be forced with `data-theme="light"` / `data-theme="dark"` on <html>.
+ *
+ * Palette discipline (Requirement 15.3): at most two brand/accent hues
+ * (--accent and --accent-2) plus a neutral ramp. Text/surface and interactive
+ * pairs are chosen to meet WCAG 2.1 AA contrast (≥4.5:1 body text,
+ * ≥3:1 large text / UI borders) in both themes.
+ *
+ * Students customize copy/images/branding in content/* and public/images/*;
+ * a changed brand color only means overriding --accent here or in content —
+ * the scale and primitives absorb it without breaking layout.
+ */
+
+:root {
+  /* ---- Color: brand/accent (max 2) ---- */
+  --accent: #3b74e8; /* primary brand action */
+  --accent-strong: #2b5fcf; /* hover/active darkening of --accent */
+  --accent-soft: #e4ecfd; /* tinted accent surface (light) */
+  --accent-2: #0f9d8f; /* second accent, used sparingly */
+  --on-accent: #ffffff; /* text/icon on accent fills */
+
+  /* ---- Color: neutrals + semantic roles (dark theme default) ---- */
+  --bg: #0b1020; /* app background */
+  --surface: #141b2e; /* cards, nav, raised panels */
+  --surface-2: #1c2540; /* nested/alt surface, hover rows */
+  --border: #2a3657; /* 1px borders, dividers */
+  --border-strong: #3a4a74; /* focused/emphasized borders */
+  --text: #e9eef7; /* primary text (AA on --bg/--surface) */
+  --muted: #a4b0c9; /* secondary text (AA on --bg/--surface) */
+  --on-accent-soft: #1b3a7a; /* text on --accent-soft */
+
+  /* ---- Color: status roles (StatusBadge) ---- */
+  /* Each pair = tinted surface + readable foreground, parity across themes. */
+  --status-pending-bg: #3a2f0f;
+  --status-pending-fg: #f4d78a;
+  --status-approved-bg: #123526;
+  --status-approved-fg: #7fe3b0;
+  --status-rejected-bg: #3a1620;
+  --status-rejected-fg: #f3a4b5;
+  --status-new-bg: #10294a;
+  --status-new-fg: #8fc2ff;
+  --status-inprogress-bg: #2d2140;
+  --status-inprogress-fg: #c8aaf5;
+  --status-closed-bg: #222a3f;
+  --status-closed-fg: #b7c2db;
+  --status-verified-bg: #0f3330;
+  --status-verified-fg: #76e2d2;
+
+  /* ---- Focus ring (visible on every interactive element) ---- */
+  --ring: color-mix(in srgb, var(--accent) 55%, transparent);
+
+  /* ---- Typography: scale + line-heights + tracking ---- */
+  --font-sans: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  --text-xs: 0.78rem;
+  --text-sm: 0.88rem;
+  --text-base: 1rem;
+  --text-lg: 1.15rem;
+  --text-xl: 1.4rem;
+  --text-2xl: 1.8rem;
+  --text-3xl: clamp(2rem, 4vw, 2.9rem);
+  --leading-tight: 1.15; /* headings */
+  --leading-snug: 1.35;
+  --leading-normal: 1.6; /* body */
+  --tracking-tight: -0.02em; /* headings */
+  --tracking-normal: 0;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ---- Spacing scale (single ramp; no ad-hoc px in components) ---- */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* ---- Radius (unified; two steps + pill) ---- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-pill: 999px;
+
+  /* ---- Shadow: subtle, border-driven depth ---- */
+  --shadow-none: none;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+
+  /* ---- Motion: fast, functional (150–200ms ease-out) ---- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 150ms;
+  --duration-base: 180ms;
+  --transition: var(--duration-base) var(--ease-out);
+
+  /* ---- Layout ---- */
+  --max-width: 1040px;
+}
+
+/* ---- Light theme: strict parity, same roles, different values ---- */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --accent-soft: #e4ecfd;
+    --on-accent-soft: #1b3a7a;
+
+    --bg: #f6f8fc;
+    --surface: #ffffff;
+    --surface-2: #eef2f9;
+    --border: #d4dcea;
+    --border-strong: #b7c3da;
+    --text: #141a28; /* AA on light surface */
+    --muted: #4f5c75; /* AA on light surface */
+
+    --status-pending-bg: #fdf1cf;
+    --status-pending-fg: #7a5a00;
+    --status-approved-bg: #d7f3e3;
+    --status-approved-fg: #0a6b43;
+    --status-rejected-bg: #fcdfe6;
+    --status-rejected-fg: #a01834;
+    --status-new-bg: #dcebff;
+    --status-new-fg: #114b94;
+    --status-inprogress-bg: #ece1fb;
+    --status-inprogress-fg: #5b3a9e;
+    --status-closed-bg: #e6ebf4;
+    --status-closed-fg: #3f4a60;
+    --status-verified-bg: #d4f3ee;
+    --status-verified-fg: #0a6b63;
+
+    --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.08);
+    --shadow-md: 0 8px 24px rgba(16, 24, 40, 0.12);
+  }
+}
+
+/* Forced light theme (data-theme overrides OS preference) */
+:root[data-theme="light"] {
+  --accent-soft: #e4ecfd;
+  --on-accent-soft: #1b3a7a;
+
+  --bg: #f6f8fc;
+  --surface: #ffffff;
+  --surface-2: #eef2f9;
+  --border: #d4dcea;
+  --border-strong: #b7c3da;
+  --text: #141a28;
+  --muted: #4f5c75;
+
+  --status-pending-bg: #fdf1cf;
+  --status-pending-fg: #7a5a00;
+  --status-approved-bg: #d7f3e3;
+  --status-approved-fg: #0a6b43;
+  --status-rejected-bg: #fcdfe6;
+  --status-rejected-fg: #a01834;
+  --status-new-bg: #dcebff;
+  --status-new-fg: #114b94;
+  --status-inprogress-bg: #ece1fb;
+  --status-inprogress-fg: #5b3a9e;
+  --status-closed-bg: #e6ebf4;
+  --status-closed-fg: #3f4a60;
+  --status-verified-bg: #d4f3ee;
+  --status-verified-fg: #0a6b63;
+
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.08);
+  --shadow-md: 0 8px 24px rgba(16, 24, 40, 0.12);
+}
+
+/* Respect reduced-motion: keep transitions near-instant but non-jarring. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 1ms;
+    --duration-base: 1ms;
+  }
+}
