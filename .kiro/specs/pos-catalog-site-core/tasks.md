@@ -66,13 +66,13 @@ These prepare the ready-to-run repository and the provisioning scripts students 
   - [x] 4.7 Transactional approval: a Postgres function that sets receipt→APPROVED + user→MEMBER atomically
     - _Requirements: 8.3, 8.4_
 
-- [ ] 5. Implement server-side auth and role helpers
+- [x] 5. Implement server-side auth and role helpers
   - `getRoleFromSession` (verify JWT, read `profiles.role`, treat invalid/expired as unauthenticated)
   - `assertRole(allowedRoles)` returning 401 (invalid session) / 403 (insufficient role); export for reuse
   - Register/login/logout via Supabase Auth; default `User`/`NON_MEMBER` enforced server-side via the profiles trigger
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3, 6.4, 14.1, 14.2_
 
-- [ ] 6. Implement the private storage client with signed-URL minting
+- [x] 6. Implement the private storage client with signed-URL minting
   - `uploadReceipt(file)` → uploads to the private bucket, returns only the `file_key`
   - `createSignedUrl(file_key, ~300s)` → short-lived URL; never persist or return a public URL
   - Shared file validation: content-type allow-list (image/*, application/pdf) + size cap
