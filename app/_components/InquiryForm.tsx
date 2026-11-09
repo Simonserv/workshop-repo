@@ -80,7 +80,7 @@ type FieldErrors = {
 type Status =
   | { kind: "idle" }
   | { kind: "submitting" }
-  | { kind: "success"; inquiryId: string }
+  | { kind: "success"; inquiryId?: string }
   | { kind: "error"; message: string; fieldErrors: FieldErrors };
 
 export function InquiryForm({
@@ -122,9 +122,12 @@ export function InquiryForm({
         fieldErrors?: FieldErrors;
       };
 
-      if (response.status === 201 && payload.inquiryId) {
+      if (response.status === 201) {
         form.reset();
-        setStatus({ kind: "success", inquiryId: payload.inquiryId });
+        setStatus({
+          kind: "success",
+          inquiryId: payload.inquiryId,
+        });
         return;
       }
 
@@ -145,10 +148,12 @@ export function InquiryForm({
 
   if (status.kind === "success") {
     return (
-      <Feedback tone="success">
-        <span>{copy.success}</span>
-        <span className="muted">Reference: {status.inquiryId}</span>
-      </Feedback>
+        <Feedback tone="success">
+          <span>{copy.success}</span>
+          {status.inquiryId ? (
+            <span className="muted">Reference: {status.inquiryId}</span>
+          ) : null}
+        </Feedback>
     );
   }
 

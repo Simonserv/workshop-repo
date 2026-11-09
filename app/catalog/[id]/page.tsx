@@ -1,29 +1,11 @@
+
 import Link from "next/link";
 
+import { listings as localListings } from "@/content/listings";
 import { getListingById } from "@/lib/listings";
 import { InquiryForm } from "@/app/_components/InquiryForm";
 import { EmptyState, ButtonLink } from "@/app/_components/ui";
 
-/**
- * Listing detail page (task 7.3) — one listing + its matching inquiry form.
- *
- * Reads the listing through the role-aware server module (`getListingById`), so
- * **Row Level Security governs unpublished visibility**: an anonymous visitor
- * or USER requesting an unpublished listing gets no row and sees the
- * not-found / denied state below; Staff/Admin can view unpublished listings
- * (Requirements 3.1–3.3). We do not distinguish "doesn't exist" from "not
- * allowed" in the UI, so nothing leaks about hidden rows.
- *
- * When a listing is visible it renders the title, description, and `/images/`
- * image (Requirement 3.4) and presents the inquiry form that corresponds to
- * the listing's `inquiry_type` — DEMO / QUOTE / INQUIRE (Requirement 3.5).
- *
- * Required states (Requirement 15): the route's `loading.tsx` covers the fetch;
- * `error.tsx` covers a failed read; the denied/not-found EMPTY STATE is handled
- * here; and the inquiry form owns its own field-level error and success states.
- *
- * Rendered dynamically so visibility always reflects the current caller's role.
- */
 export const dynamic = "force-dynamic";
 
 export default async function ListingDetailPage({
@@ -31,7 +13,30 @@ export default async function ListingDetailPage({
 }: {
   params: { id: string };
 }) {
-  const listing = await getListingById(params.id);
+  const supabaseConfigured =
+    !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Database listings use UUIDs. Local listings use their slugs.
+  const listing = supabaseConfigured
+    ? await getListingById(params.id)
+    : (() => {
+        const localListing = localListings.find(
+          (item) => item.slug === params.id,
+        );
+
+        return localListing
+          ? {
+              id: localListing.slug,
+              title: localListing.title,
+              category: localListing.category,
+              description: localListing.description,
+              inquiry_type: localListing.inquiry_type,
+              image_url: localListing.image_url,
+              is_published: true,
+            }
+          : null;
+      })();
 
   if (!listing) {
     return (
